@@ -1,45 +1,29 @@
 from flask import Flask, request, jsonify
-from utils.expiry_checker import check_expiry
-from utils.whatsapp_alerts import send_whatsapp_alert
+from utils.expiry_checker import process_file  # Import the process_file function
 
 app = Flask(__name__)
 
-@app.route('/')
-def home():
-    return "SaveStock API is running!"
-
-@app.route('/check-expiry', methods=['POST'])
+# Route to upload file and check expiry dates
+@app.route('/check_expiry', methods=['POST'])
 def check_expiry_route():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    
     try:
-        if 'file' not in request.files:
-            return jsonify({"error": "No file part in the request"}), 400
+        # Process the file and get the expiry check results
+        result = process_file(file)
         
-        file = request.files['file']
-        
-        if file.filename == '':
-            return jsonify({"error": "No selected file"}), 400
-
-        result = check_expiry(file)
-
+        # Return the processed results as JSON
         return jsonify(result)
-
+    
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
-@app.route('/send-whatsapp', methods=['POST'])
-def send_whatsapp_route():
-    try:
-        data = request.get_json()
-
-        if not data or 'message' not in data:
-            return jsonify({"error": "Missing 'message' in request body"}), 400
-        
-        response = send_whatsapp_alert(data['message'])
-        
-        return jsonify(response)
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True)
