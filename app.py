@@ -1,5 +1,7 @@
-from fastapi import FastAPI, Request
-from utils.expiry_checker import check_expiry_dates
+# app.py
+
+from fastapi import FastAPI
+from routers import expiry_router
 
 app = FastAPI()
 
@@ -7,9 +9,5 @@ app = FastAPI()
 def read_root():
     return {"message": "Welcome to the SaveStock API!"}
 
-@app.post("/check-expiry")
-async def check_expiry(request: Request):
-    data = await request.json()
-    items = data.get("items", [])
-    result = check_expiry_dates(items)
-    return {"result": result}
+# Include the expiry checking routes
+app.include_router(expiry_router.router, prefix="/expiry", tags=["Expiry Checker"])
