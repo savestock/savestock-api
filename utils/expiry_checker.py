@@ -1,34 +1,38 @@
 import pandas as pd
 from datetime import datetime
+import io
 
-# This function checks if the expiry date is in the past
 def check_expiry(expiry_date_str):
     try:
         expiry_date = datetime.strptime(expiry_date_str, "%Y-%m-%d")
-        current_date = datetime.now()
-        return expiry_date < current_date
+        return expiry_date < datetime.now()
     except Exception as e:
-        print(f"Error in check_expiry: {e}")
+        print(f"Error parsing expiry date: {e}")
         return False
 
-# This function processes the file and checks the expiry for each record
 def process_file(file):
     try:
-        # Attempt to read the uploaded file with proper encoding handling
+        # Read file bytes
+        content = file.read()
+
+        # Try to decode with utf-8 first
         try:
-            df = pd.read_csv(file, encoding='utf-8')
+            decoded = content.decode('utf-8')
         except UnicodeDecodeError:
-            df = pd.read_csv(file, encoding='ISO-8859-1')  # fallback encoding
+            decoded = content.decode('ISO-8859-1')
 
-        # Ensure that there is a column with expiry dates (e.g., 'expiry_date')
+        # Now create a StringIO object
+        data = io.StringIO(decoded)
+
+        # Now read CSV
+        df = pd.read_csv(data)
+
         if 'expiry_date' not in df.columns:
-            return {"error": "No expiry_date column found in the file"}, 400
+            return {"error": "No 'expiry_date' column found in the file"}
 
-        # Check expiry for each row and add a new column 'is_expired' based on the result
         df['is_expired'] = df['expiry_date'].apply(check_expiry)
 
-        # Convert the dataframe back to a dictionary for JSON response
-        result = df.to_dict(orient='records')
-        return result
+        return df.to_dict(orient='records')
+
     except Exception as e:
-        return {"error": f"Error processing file: {str(e)}"}, 500
+        return {"error": f"Error processing file: {str(e)}"}
