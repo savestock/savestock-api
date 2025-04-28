@@ -1,6 +1,7 @@
-
+fadtspi
 Flask
 pandas
 python-dotenv
 gunicorn
 twilio
+openpyxl
