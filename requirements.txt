@@ -1,7 +1,5 @@
 fastapi
-Flask
+uvicorn
 pandas
-python-multipart
-gunicorn
-twilio
 openpyxl
+python-multipart
