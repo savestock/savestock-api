@@ -1,0 +1,39 @@
+
+{
+  "info": {
+    "name": "SaveStock API",
+    "_postman_id": "dummy-id",
+    "description": "Collection to test SaveStock API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Upload Inventory File",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": {
+          "raw": "https://your-render-link/upload",
+          "protocol": "https",
+          "host": [
+            "your-render-link"
+          ],
+          "path": [
+            "upload"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
