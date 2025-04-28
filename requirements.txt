@@ -1,4 +1,4 @@
-fadtspi
+fastapi
 Flask
 pandas
 python-dotenv
