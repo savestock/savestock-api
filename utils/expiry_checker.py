@@ -1,33 +1,48 @@
+import pandas as pd
 from datetime import datetime, timedelta
 
-def check_expiry_dates(df):
-    warnings = []
+def check_expiry_dates(file_path):
+    df = pd.read_excel(file_path)
+
     today = datetime.today()
-    discount_items = []
+    near_expiry_threshold = today + timedelta(days=30)
 
-    # Loop through each item in the inventory
-    for index, row in df.iterrows():
-        try:
-            expiry_date = datetime.strptime(str(row['Expiry_Date']), '%Y-%m-%d')
-            days_to_expiry = (expiry_date - today).days
+    expired_products = []
+    near_expiry_products = []
+    offer_products = []
 
-            if days_to_expiry <= 30:
-                warning_message = f"⚠ {row['Product']} (Batch {row['Batch']}) expires in {days_to_expiry} days. Apply 20% discount."
-                warnings.append(warning_message)
+    for _, row in df.iterrows():
+        expiry_date = row['Expiry_date']
 
-                discount_items.append({
-                    "product": row['Product'],
-                    "batch": row['Batch'],
-                    "category": row['Category'],
-                    "stock": row['Stock'],
-                    "days_to_expiry": days_to_expiry,
-                    "recommended_discount": "20%"
-                })
+        if pd.isna(expiry_date):
+            continue
 
-        except Exception as e:
-            warnings.append(f"Error processing row {index + 1}: {str(e)}")
+        if isinstance(expiry_date, str):
+            expiry_date = datetime.strptime(expiry_date, "%Y-%m-%d")
 
-    return {
-        "warnings": warnings,
-        "discount_recommendations": discount_items
-    }
+        if expiry_date < today:
+            expired_products.append({
+                "product": row['product'],
+                "batch": row['batch'],
+                "expiry_date": expiry_date.strftime("%Y-%m-%d"),
+                "stock": row['stock'],
+                "category": row['category']
+            })
+        elif today <= expiry_date <= near_expiry_threshold:
+            near_expiry_products.append({
+                "product": row['product'],
+                "batch": row['batch'],
+                "expiry_date": expiry_date.strftime("%Y-%m-%d"),
+                "stock": row['stock'],
+                "category": row['category']
+            })
+            offer_products.append({
+                "product": row['product'],
+                "batch": row['batch'],
+                "expiry_date": expiry_date.strftime("%Y-%m-%d"),
+                "stock": row['stock'],
+                "category": row['category'],
+                "offer": "Sell at 20% discount"
+            })
+
+    return expired_products, near_expiry_products, offer_products
