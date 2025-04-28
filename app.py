@@ -37,6 +37,9 @@ def upload_file():
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({"message": "Welcome to SaveStock API"}), 200
+    @app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
