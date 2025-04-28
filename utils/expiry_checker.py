@@ -1,48 +1,29 @@
 import pandas as pd
+import io
 from datetime import datetime, timedelta
 
-def check_expiry_dates(file_path):
-    df = pd.read_excel(file_path)
+def process_stock_file(file_contents):
+    df = pd.read_excel(io.BytesIO(file_contents))
+    
+    # Check for "expiry_date" and "price" columns
+    if 'expiry_date' not in df.columns or 'price' not in df.columns:
+        return {"error": "File must contain 'expiry_date' and 'price' columns."}
+    
+    now = datetime.now()
+    soon_threshold = now + timedelta(days=30)  # 30 days from now
 
-    today = datetime.today()
-    near_expiry_threshold = today + timedelta(days=30)
-
-    expired_products = []
-    near_expiry_products = []
-    offer_products = []
-
-    for _, row in df.iterrows():
-        expiry_date = row['Expiry_date']
-
-        if pd.isna(expiry_date):
-            continue
-
-        if isinstance(expiry_date, str):
-            expiry_date = datetime.strptime(expiry_date, "%Y-%m-%d")
-
-        if expiry_date < today:
-            expired_products.append({
-                "product": row['product'],
-                "batch": row['batch'],
-                "expiry_date": expiry_date.strftime("%Y-%m-%d"),
-                "stock": row['stock'],
-                "category": row['category']
-            })
-        elif today <= expiry_date <= near_expiry_threshold:
-            near_expiry_products.append({
-                "product": row['product'],
-                "batch": row['batch'],
-                "expiry_date": expiry_date.strftime("%Y-%m-%d"),
-                "stock": row['stock'],
-                "category": row['category']
-            })
-            offer_products.append({
-                "product": row['product'],
-                "batch": row['batch'],
-                "expiry_date": expiry_date.strftime("%Y-%m-%d"),
-                "stock": row['stock'],
-                "category": row['category'],
-                "offer": "Sell at 20% discount"
-            })
-
-    return expired_products, near_expiry_products, offer_products
+    discounted_prices = []
+    
+    for index, row in df.iterrows():
+        expiry_str = str(row['expiry_date'])
+        try:
+            expiry_date = pd.to_datetime(expiry_str)
+            price = row['price']
+            if expiry_date <= soon_threshold:
+                price = price * 0.8  # 20% discount
+            discounted_prices.append(price)
+        except Exception as e:
+            discounted_prices.append(None)
+    
+    df['discounted_price'] = discounted_prices
+    return df.to_dict(orient="records")
