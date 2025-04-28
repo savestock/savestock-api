@@ -14,8 +14,11 @@ def check_expiry(expiry_date_str):
 # This function processes the file and checks the expiry for each record
 def process_file(file):
     try:
-        # Read the uploaded file (assumes CSV for now)
-        df = pd.read_csv(file)
+        # Attempt to read the uploaded file with proper encoding handling
+        try:
+            df = pd.read_csv(file, encoding='utf-8')
+        except UnicodeDecodeError:
+            df = pd.read_csv(file, encoding='ISO-8859-1')  # fallback encoding
 
         # Ensure that there is a column with expiry dates (e.g., 'expiry_date')
         if 'expiry_date' not in df.columns:
