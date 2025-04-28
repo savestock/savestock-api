@@ -1,12 +1,7 @@
-
 from flask import Flask, request, jsonify
 import pandas as pd
-import os
-from utils.expiry_checker import check_expiry_dates
 from utils.whatsapp_alerts import send_whatsapp_alert
-from dotenv import load_dotenv
-
-load_dotenv()
+from utils.check_expiry import check_expiry_dates
 
 app = Flask(__name__)
 
@@ -17,6 +12,7 @@ def upload_file():
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
+
     try:
         if file.filename.endswith('.csv'):
             df = pd.read_csv(file)
@@ -25,7 +21,7 @@ def upload_file():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-    if not {'Product', 'Batch', 'Expiry_Date', 'Stock'}.issubset(df.columns):
+    if not {'Product', 'Batch', 'Expiry Date'}.issubset(df.columns):
         return jsonify({'error': 'Missing required columns'}), 400
 
     results = check_expiry_dates(df)
@@ -36,10 +32,11 @@ def upload_file():
 
 @app.route('/', methods=['GET'])
 def home():
-    return jsonify({"message": "Welcome to SaveStock API"}), 200
-    @app.get("/health")
-def health_check():
-    return {"status": "ok"}
+    return jsonify({"message": "Welcome to the SaveStock API!"})
 
-if __name__ == "__main__":
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "ok"})
+
+if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
