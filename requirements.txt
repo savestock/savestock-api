@@ -1,7 +1,7 @@
 fastapi
 Flask
 pandas
-python-dotenv
+python-multipart
 gunicorn
 twilio
 openpyxl
