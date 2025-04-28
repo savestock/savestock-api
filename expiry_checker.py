@@ -1,21 +1,33 @@
-
-import pandas as pd
 from datetime import datetime, timedelta
 
 def check_expiry_dates(df):
     warnings = []
     today = datetime.today()
-    for _, row in df.iterrows():
+    discount_items = []
+
+    # Loop through each item in the inventory
+    for index, row in df.iterrows():
         try:
-            expiry_date = pd.to_datetime(row['Expiry_Date'])
-            days_left = (expiry_date - today).days
-            if days_left < 30:
-                discount = "10%" if row['Stock'] > 50 else "5%"
-                warning = f"⚠ {row['Product']} (Batch {row['Batch']}) expires in {days_left} days! Suggest discount {discount}."
-                warnings.append(warning)
+            expiry_date = datetime.strptime(str(row['Expiry_Date']), '%Y-%m-%d')
+            days_to_expiry = (expiry_date - today).days
+
+            if days_to_expiry <= 30:
+                warning_message = f"⚠ {row['Product']} (Batch {row['Batch']}) expires in {days_to_expiry} days. Apply 20% discount."
+                warnings.append(warning_message)
+
+                discount_items.append({
+                    "product": row['Product'],
+                    "batch": row['Batch'],
+                    "category": row['Category'],
+                    "stock": row['Stock'],
+                    "days_to_expiry": days_to_expiry,
+                    "recommended_discount": "20%"
+                })
+
         except Exception as e:
-            continue
+            warnings.append(f"Error processing row {index + 1}: {str(e)}")
+
     return {
         "warnings": warnings,
-        "total_flags": len(warnings)
+        "discount_recommendations": discount_items
     }
