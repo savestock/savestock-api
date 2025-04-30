@@ -3,6 +3,7 @@ from utils.expiry_checker import load_stock_data, find_expiring_products, genera
 
 st.title("ExpiryGuard AI")
 st.write("Upload stock data (Excel/CSV) to check expiring products.")
+st.write("Required columns: Product, Batch, Expiry_Date, Quantity, Category")
 
 uploaded_file = st.file_uploader("Choose a file", type=['xlsx', 'csv'])
 if uploaded_file:
