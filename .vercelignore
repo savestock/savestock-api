@@ -1,0 +1,11 @@
+venv/
+env/
+__pycache__/
+*.pyc
+node_modules/
+*.log
+*.csv
+*.json
+*.jpg
+*.png
+*.mp4
