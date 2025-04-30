@@ -1,7 +1,10 @@
+/tmp/
+*.xlsx
+*.csv
+__pycache__/
+*.pyc
+.vercel/
 venv/
 env/
 test_env/
-__pycache__/
-*.pyc
 *.log
-.vercel/
