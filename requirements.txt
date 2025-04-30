@@ -1,4 +1,5 @@
-flask
-gunicorn
-twilio
-python-sendgrid
+flask==2.3.3
+gunicorn==20.1.0
+twilio==8.10.0
+python-sendgrid==0.9.7
+pandas==2.2.2
