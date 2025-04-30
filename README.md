@@ -26,3 +26,4 @@ This API lets you upload Excel/CSV files and automatically scans for products ne
 - Batch
 - Expiry_Date
 - Stock
+- Category
