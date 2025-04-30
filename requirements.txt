@@ -1,8 +1,4 @@
-pandas
-scikit-learn
-openpyxl
 flask
-twilio
-sendgrid
-requests
 gunicorn
+twilio
+python-sendgrid
