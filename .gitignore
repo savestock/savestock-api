@@ -1,11 +1,7 @@
 venv/
 env/
+test_env/
 __pycache__/
 *.pyc
-node_modules/
 *.log
-*.csv
-*.json
-*.jpg
-*.png
-*.mp4
+.vercel/
