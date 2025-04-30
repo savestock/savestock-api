@@ -1,38 +1,37 @@
 import pandas as pd
-from datetime import datetime
-import io
+from datetime import datetime, timedelta
+import random
 
-def check_expiry(expiry_date_str):
+def load_stock_data(file_path):
     try:
-        expiry_date = datetime.strptime(expiry_date_str, "%Y-%m-%d")
-        return expiry_date < datetime.now()
+        df = pd.read_excel(file_path) if file_path.endswith('.xlsx') else pd.read_csv(file_path)
+        required_columns = ['Product', 'Batch', 'Expiry_Date', 'Stock']
+        if not all(col in df.columns for col in required_columns):
+            raise ValueError("Excel must have Product, Batch, Expiry_Date, Stock columns")
+        df['Expiry_Date'] = pd.to_datetime(df['Expiry_Date'])
+        return df
     except Exception as e:
-        print(f"Error parsing expiry date: {e}")
-        return False
+        return str(e)
 
-def process_file(file):
-    try:
-        # Read file bytes
-        content = file.read()
+def find_expiring_products(df, days=30):
+    today = datetime.now()
+    threshold = today + timedelta(days=days)
+    expiring = df[df['Expiry_Date'] <= threshold]
+    return expiring
 
-        # Try to decode with utf-8 first
-        try:
-            decoded = content.decode('utf-8')
-        except UnicodeDecodeError:
-            decoded = content.decode('ISO-8859-1')
+def generate_discount_suggestions(expiring):
+    suggestions = []
+    for _, row in expiring.iterrows():
+        discount = random.randint(20, 30)
+        suggestion = f"Sell {row['Product']} (Batch: {row['Batch']}) at {discount}% discount to clear {row['Stock']} units before {row['Expiry_Date'].strftime('%Y-%m-%d')}"
+        suggestions.append(suggestion)
+    return suggestions
 
-        # Now create a StringIO object
-        data = io.StringIO(decoded)
-
-        # Now read CSV
-        df = pd.read_csv(data)
-
-        if 'expiry_date' not in df.columns:
-            return {"error": "No 'expiry_date' column found in the file"}
-
-        df['is_expired'] = df['expiry_date'].apply(check_expiry)
-
-        return df.to_dict(orient='records')
-
-    except Exception as e:
-        return {"error": f"Error processing file: {str(e)}"}
+def generate_report(expiring, suggestions):
+    if expiring.empty:
+        return "No products expiring within 30 days."
+    report = "ExpiryGuard AI Report\n\nExpiring Products:\n"
+    for _, row in expiring.iterrows():
+        report += f"- {row['Product']} (Batch: {row['Batch']}): {row['Stock']} units, expires {row['Expiry_Date'].strftime('%Y-%m-%d')}\n"
+    report += "\nSuggestions:\n" + "\n".join(suggestions)
+    return report
