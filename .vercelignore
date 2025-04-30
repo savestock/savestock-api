@@ -6,8 +6,10 @@ __pycache__/
 node_modules/
 *.log
 *.csv
+*.xlsx
 *.json
 *.jpg
 *.png
 *.mp4
 app_streamlit.py
+requirements-local.txt
