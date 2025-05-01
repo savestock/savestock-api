@@ -1,51 +1,76 @@
 from flask import Flask, request, jsonify
-from utils.expiry_checker import load_stock_data, find_expiring_products, generate_discount_suggestions, generate_report
-from utils.whatsapp_alerts import send_whatsapp_alert, send_email_alert
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+from twilio.rest import Client
 import os
+from utils.expiry_checker import check_expiry
+from utils.whatsapp_alerts import send_whatsapp
 
 app = Flask(__name__)
 
-# Environment variables (set in Vercel dashboard)
-TWILIO_SID = os.getenv("TWILIO_SID", "YOUR_TWILIO_ACCOUNT_SID")
-TWILIO_TOKEN = os.getenv("TWILIO_TOKEN", "YOUR_TWILIO_AUTH_TOKEN")
-TWILIO_WHATSAPP = os.getenv("TWILIO_WHATSAPP", "whatsapp:+14155238886")
-SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "YOUR_SENDGRID_API_KEY")
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "your@gmail.com")
-
-@app.route('/upload', methods=['POST'])
-def process_stock():
-    try:
-        if 'file' not in request.files:
-            return jsonify({"error": "No file uploaded"}), 400
-        file = request.files['file']
-        file_path = f"/tmp/{file.filename}"  # Vercel uses /tmp for file storage
-        file.save(file_path)
-        
-        df = load_stock_data(file_path)
-        if isinstance(df, str):
-            return jsonify({"error": df}), 400
-        
-        expiring = find_expiring_products(df)
-        suggestions = generate_discount_suggestions(expiring)
-        report = generate_report(expiring, suggestions)
-        
-        send_whatsapp_alert(report, TWILIO_SID, TWILIO_TOKEN, TWILIO_WHATSAPP, "whatsapp:+923001234567")
-        send_email_alert(report, SENDGRID_API_KEY, SENDER_EMAIL, "client@example.com")
-        
-        return jsonify({"report": report})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 @app.route('/test_apis', methods=['GET'])
-def test_apis():
+def test_api():
     try:
-        test_message = "Test from ExpiryGuard AI"
-        whatsapp_result = send_whatsapp_alert(test_message, TWILIO_SID, TWILIO_TOKEN, TWILIO_WHATSAPP, "whatsapp:+923001234567")
-        email_result = send_email_alert(test_message, SENDGRID_API_KEY, SENDER_EMAIL, "your@gmail.com")
-        return jsonify({"status": "APIs working", "whatsapp": whatsapp_result, "email": email_result})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        # Test SendGrid email
+        message = Mail(
+            from_email=os.environ.get('SENDER_EMAIL'),
+            to_emails='recipient@example.com',  # Replace with test email
+            subject='ExpiryGuard Test',
+            html_content='<strong>Hello from ExpiryGuard!</strong>')
+        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        email_response = sg.send(message)
 
-# Vercel serverless function entry point
-def handler(request):
-    return app(request.environ, start_response)
+        # Test Twilio WhatsApp
+        whatsapp_response = send_whatsapp(
+            to_number='+1234567890',  # Replace with test number
+            message='Hello from ExpiryGuard!'
+        )
+
+        return jsonify({
+            'status': 'success',
+            'email_status': email_response.status_code,
+            'whatsapp_sid': whatsapp_response
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/check_expiry', methods=['POST'])
+def check_expiry_endpoint():
+    try:
+        data = request.get_json()
+        item_name = data.get('item_name')
+        expiry_date = data.get('expiry_date')  # Format: YYYY-MM-DD
+        days_threshold = data.get('days_threshold', 7)
+
+        if not item_name or not expiry_date:
+            return jsonify({'status': 'error', 'message': 'Missing item_name or expiry_date'}), 400
+
+        is_expired, days_left = check_expiry(expiry_date, days_threshold)
+
+        if is_expired:
+            # Send email alert
+            message = Mail(
+                from_email=os.environ.get('SENDER_EMAIL'),
+                to_emails='recipient@example.com',  # Replace with user email
+                subject=f'Expiry Alert: {item_name}',
+                html_content=f'<strong>{item_name} expires in {days_left} days!</strong>')
+            sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+            sg.send(message)
+
+            # Send WhatsApp alert
+            send_whatsapp(
+                to_number='+1234567890',  # Replace with user number
+                message=f'{item_name} expires in {days_left} days!'
+            )
+
+        return jsonify({
+            'status': 'success',
+            'item_name': item_name,
+            'is_expired': is_expired,
+            'days_left': days_left
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+if __name__ == '__main__':
+    app.run()
